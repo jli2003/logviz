@@ -7,10 +7,12 @@ import calico.IOWebApp
 import calico.html.io.{*, given}
 import cats.effect.IO
 import cats.effect.Resource
+import cats.effect.kernel.Ref
 import fs2.dom.HtmlElement
 import fs2.concurrent.SignallingRef
 import org.http4s.dom.FetchClientBuilder
 import org.http4s.client.Client
+
 
 
 /**
@@ -31,7 +33,6 @@ object Main extends IOWebApp {
       requestH1   <- h1(idAttr:= "request")
       now         <- Resource.eval(IO(LocalDateTime.now(ZoneOffset.UTC)))
       startRef    <- Resource.eval(SignallingRef[IO].of(now.minusHours(24)))
-
       //***
       endRef      <- Resource.eval(SignallingRef[IO].of(now))
       liveRef     <- Resource.eval(SignallingRef[IO].of(true))
@@ -51,18 +52,20 @@ object Main extends IOWebApp {
                       })
                     )
       //***
-
       //TODO: use later once able to make event request everytime time range changes
       //changes that are currently unused due to waiting on eventComponent rework will be marked with ***
-      timeRange   <- new TimeRangeComponent(startRef, endRef, liveRef).render //***
-
-
-      component   =  new EventComponent(ec.getEvents, requestH1, startRef, endRef, liveRef)
+      timeRange   <- new TimeRangeComponent(startRef, endRef, liveRef).render 
+      // timeSelect  <- div(idAttr:= "time-selection", liveButton, timeRange)
+      //***
+      
+      //zoom ref might not need to be a signallingref since we're checking every animation frame
+      zoomRef     <- Resource.eval(Ref[IO].of(1.0))
+      zoom        <- new ZoomComponent(zoomRef).render
+      component   =  new EventComponent(ec.getEvents, requestH1, startRef, endRef, liveRef, zoomRef)
       timeline    <- component.render
 
-      // timeSelect  <- div(idAttr:= "time-selection", liveButton, timeRange) /***
       requestInfo <- div(idAttr:= "request-detail", requestH1)
-      box         <- div(idAttr:= "box", timeline, requestInfo)
+      box         <- div(idAttr:= "box", timeline, zoom, requestInfo)
       html        <- div(idAttr:= "container", box)
       
   } yield html
