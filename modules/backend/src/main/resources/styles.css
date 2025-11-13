@@ -75,3 +75,14 @@ input:valid + span::after {
   flex-direction: column;
   align-items: center;
 }
+
+.zoom-button{
+  font-weight: bold;
+  font-size: 15px;
+  border: none;
+  background-color: transparent;
+}
+
+.zoom-button:hover{
+  background-color: grey;
+}

@@ -42,7 +42,6 @@ class EventComponent(
   zoomRef: Ref[IO, Double]
   ) {
   val timestampFormatter= DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00")
-  // val pixelsPerSec = 1.0
 
  
   /**
@@ -64,6 +63,7 @@ class EventComponent(
       rectRef     <- Resource.eval(Ref[IO].of(List[Rectangle]()))
       end         <- Resource.eval(endTime.get)
       prevEndRef  <- Resource.eval(Ref[IO].of(end))
+      prevZoomRef <- Resource.eval(Ref[IO].of(1.0))
       _           <- animate(canvas, 
                       context, 
                       sizer.asInstanceOf[HTMLElement],
@@ -71,7 +71,8 @@ class EventComponent(
                       scrollRef, 
                       isLive, 
                       rectRef,
-                      prevEndRef)
+                      prevEndRef,
+                      prevZoomRef)
       _           <- hover(canvas, requestDetails.asInstanceOf[HTMLElement], rectRef)
     } yield(timeline)
   
@@ -205,19 +206,21 @@ class EventComponent(
     prevScrollPos: Ref[IO, Double],
     isLive: Ref[IO, Boolean],
     rectRef: Ref[IO, List[Rectangle]],
-    prevEndRef: Ref[IO, LocalDateTime]
+    prevEndRef: Ref[IO, LocalDateTime],
+    prevZoomRef: Ref[IO, Double]
   ): Resource[IO, Dispatcher[IO]] =
     Dispatcher.sequential[IO] evalTap{ dispatcher => 
 
       def go(timestamp: Double): IO[Unit] = 
         for {
-          top     <- IO(canvas.parentElement.scrollTop)
-          live    <- isLive.get
-          prevTop <- prevScrollPos.get
-          start   <- startTime.get
-          prevEnd <- prevEndRef.get
-          end     <- endTime.get
-          liveTog <- liveRef.get
+          top       <- IO(canvas.parentElement.scrollTop)
+          live      <- isLive.get
+          prevTop   <- prevScrollPos.get
+          start     <- startTime.get
+          prevEnd   <- prevEndRef.get
+          end       <- endTime.get
+          liveTog   <- liveRef.get
+          prevZoom  <- prevZoomRef.get
           zoomLev <- zoomRef.get
 
           //*** liveTog will currently always be true 
@@ -227,7 +230,7 @@ class EventComponent(
           //so live button tells us to allow live updating when at the top hence need for both liveTog and live
 
           //if liveTog(want live updates when at the top) and if live(meaning we're at top of the canvas) then we always redraw each animation frame
-          _       <- if (liveTog && (live || prevTop != top)) {
+          _       <- if (liveTog && (live || prevTop != top || prevZoom != zoomLev)) {
 
                       for {
                         //if user changes size of browser or anything, then just adjusting canvas to fit those changes
@@ -270,11 +273,12 @@ class EventComponent(
                                   } else {
                                     isLive.update(_ => false)
                                   }
+                        _       <- prevZoomRef.set(zoomLev)
                       } yield ()
 
                       //*** unused until timecomponent is re-introduced
                       //only redraw when scrolling or there are changes if live is not toggled
-                    } else if (!liveTog && (prevEnd != end || prevTop != top)){
+                    } else if (!liveTog && (prevEnd != end || prevTop != top || prevZoom != zoomLev)){
                         for {
                           tlRect  <- IO(canvas.parentElement.getBoundingClientRect())
                           height  =  tlRect.height
@@ -303,6 +307,7 @@ class EventComponent(
                                       zoomLev)
                           _       <- prevScrollPos.update(_ => top)
                           _       <- prevEndRef.set(end)
+                          _       <- prevZoomRef.set(zoomLev)
                         } yield()
                     } else {
                       IO.unit
