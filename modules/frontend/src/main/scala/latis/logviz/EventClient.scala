@@ -16,20 +16,22 @@ import java.time.LocalDateTime
 
 /** EventClient used to return stream of events */
 trait EventClient {
-  def getEvents(startTime: String, endTime: Option[String]): Stream[IO, Event]
+  def getEvents(startTime: String, endTime: Option[String], instance: Option[String]): Stream[IO, Event]
 
   //no given start and end time: past 24 hours + live
   def getEvents: Stream[IO, Event] =
     val curr = LocalDateTime.now(java.time.ZoneId.of("UTC"))
     val start = curr.toLocalDate().atStartOfDay().toString()
-    getEvents(start, None)
+    getEvents(start, None, None)
 
   //no end time (live)
   def getEvents(start: String): Stream[IO, Event] = 
-    getEvents(start, None)
+    getEvents(start, None, None)
 
   def getEvents(start: String, end: String): Stream[IO, Event] = 
-    getEvents(start, Some(end))
+    getEvents(start, Some(end), None)
+
+  // def getInstances: IO[List[String]]
 }
 
 object EventClient {
@@ -53,7 +55,9 @@ object EventClient {
       val baseUri = Uri.unsafeFromString(s"$protocol//$host")
 
       new EventClient {
-        override def getEvents(startTime: String, endTime: Option[String]): Stream[IO, Event] =         
+        //TODO:
+        //should there be a default instance?
+        override def getEvents(startTime: String, endTime: Option[String], instance: Option[String]): Stream[IO, Event] =         
           
           val uri = endTime match {
             case None => 
@@ -87,6 +91,14 @@ object EventClient {
               }
               .unNone
           }
+
+        //TODO:
+        //since /instances is giving us a json back, do we need circe?
+        // override def getInstances: IO[List[String]] = 
+        //   val uri = Uri.unsafeFromString(s"$baseUri/instances")
+        //   val request = Request[IO](method = Method.GET, uri = uri)
+
+        //   http.expect[List[String]](request)
       }
     }
 }

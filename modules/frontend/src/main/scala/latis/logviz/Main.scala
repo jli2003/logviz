@@ -118,8 +118,10 @@ object Main extends IOWebApp {
       component   =  new EventComponent(events, eventRef, startRef, endRef, liveRef, zoomRef)
       timeline    <- component.render
 
+      autocomplete <- new AutocompleteComponent(List("latis3-swp", "webtcad", "latis-swp", "lisird", "test")).render
+
       requestInfo <- div(idAttr:= "request-detail", info)
-      box         <- div(idAttr:= "box", timeline, zoom, requestInfo, timeSelect)
+      box         <- div(idAttr:= "box", timeline, zoom, requestInfo, timeSelect, autocomplete)
       html        <- div(idAttr:= "container", box)
       
   } yield html
