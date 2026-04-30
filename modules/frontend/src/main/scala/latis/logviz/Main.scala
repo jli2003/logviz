@@ -39,6 +39,7 @@ object Main extends IOWebApp {
       endRef      <- Resource.eval(SignallingRef[IO].of(now))
       liveRef     <- Resource.eval(SignallingRef[IO].of(false))
       events      <- Resource.eval(SignallingRef[IO].of[Stream[IO, Event]](ec.getEvents))
+      instanceRef <- Resource.eval(SignallingRef[IO].of[String](""))
 
       liveButton  <- button( 
                       `type` := "button",
@@ -117,8 +118,17 @@ object Main extends IOWebApp {
       info        <- evComponent.render
       component   =  new EventComponent(events, eventRef, startRef, endRef, liveRef, zoomRef)
       timeline    <- component.render
+      
+      instances   <- Resource.eval(ec.getInstances)
+      // _           <- Resource.eval(IO.println(instances))
+      // autocomplete <- new AutocompleteComponent(List("latis3-swp", "webtcad", "latis-swp", "lisird", "test")).render
+      autocomplete<- new AutocompleteComponent(instances, instanceRef).render
 
-      autocomplete <- new AutocompleteComponent(List("latis3-swp", "webtcad", "latis-swp", "lisird", "test")).render
+      //does perflatmapN work like flatmap n?
+      // params      = (startRef, endRef, instanceRef).parFlatMapN{ (start, end, instance) => (start, end, instance)}
+
+      //problem is that getevents also depend on the start and end refs. 
+      // _           <- instance.discrete.switchMap(i => events.set(ec.getEvents()))
 
       requestInfo <- div(idAttr:= "request-detail", info)
       box         <- div(idAttr:= "box", timeline, zoom, requestInfo, timeSelect, autocomplete)

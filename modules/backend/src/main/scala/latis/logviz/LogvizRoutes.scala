@@ -39,6 +39,9 @@ class LogvizRoutes(eventsource: EventSource, instancesource: InstanceSource) ext
     case req @ GET -> Root / "events.json" =>
       StaticFile.fromResource("events.json", req.some).getOrElseF(NotFound())
 
+    case req @ GET -> Root / "events1.json" =>
+      StaticFile.fromResource("events1.json", req.some).getOrElseF(NotFound())
+
     case req @ GET -> Root / "styles.css" =>
       StaticFile.fromResource("styles.css", req.some).getOrElseF(NotFound())
 

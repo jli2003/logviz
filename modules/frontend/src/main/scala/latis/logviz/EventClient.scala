@@ -1,10 +1,13 @@
 package latis.logviz
 
+import java.time.LocalDateTime
+
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.Stream
 import fs2.dom.Window
 import io.circe.parser.*
+import org.http4s.circe.*
 import org.http4s.Method
 import org.http4s.Request
 import org.http4s.ServerSentEvent
@@ -12,7 +15,6 @@ import org.http4s.Uri
 import org.http4s.client.Client
 
 import latis.logviz.model.Event
-import java.time.LocalDateTime
 
 /** EventClient used to return stream of events */
 trait EventClient {
@@ -22,16 +24,16 @@ trait EventClient {
   def getEvents: Stream[IO, Event] =
     val curr = LocalDateTime.now(java.time.ZoneId.of("UTC"))
     val start = curr.toLocalDate().atStartOfDay().toString()
-    getEvents(start, None, None)
+    getEvents(start, None, Some("json1"))
 
   //no end time (live)
   def getEvents(start: String): Stream[IO, Event] = 
-    getEvents(start, None, None)
+    getEvents(start, None, Some("json1"))
 
   def getEvents(start: String, end: String): Stream[IO, Event] = 
-    getEvents(start, Some(end), None)
+    getEvents(start, Some(end), Some("json1"))
 
-  // def getInstances: IO[List[String]]
+  def getInstances: IO[List[String]]
 }
 
 object EventClient {
@@ -62,15 +64,13 @@ object EventClient {
           val uri = endTime match {
             case None => 
               //TODO:
-              //using current time as the endtime if none is given
-              //should a live query parameter be added?
-              //how would real sources like splunk know to give realtime data?
+              //UPDATE TO USE JSON
               val endTime = LocalDateTime.now(java.time.ZoneId.of("UTC"))
               val end = endTime.toString()
-              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$end")
+              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$end&instance=json1")
             
             case Some(value) => 
-              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$value")
+              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$value&instance=json1")
           }
 
           val request = Request[IO](method = Method.GET, uri = uri)
@@ -92,13 +92,11 @@ object EventClient {
               .unNone
           }
 
-        //TODO:
-        //since /instances is giving us a json back, do we need circe?
-        // override def getInstances: IO[List[String]] = 
-        //   val uri = Uri.unsafeFromString(s"$baseUri/instances")
-        //   val request = Request[IO](method = Method.GET, uri = uri)
+        override def getInstances: IO[List[String]] = 
+          val uri = Uri.unsafeFromString(s"$baseUri/instances")
+          val request = Request[IO](method = Method.GET, uri = uri)
 
-        //   http.expect[List[String]](request)
+          http.expect(request)(jsonOf[IO, List[String]])
       }
     }
 }

@@ -1,0 +1,20 @@
+[
+  {
+    "eventType": "Request",
+    "id": "14",
+    "time": "5674",
+    "request": "example 11 future event"
+  },
+  {
+    "eventType": "Response",
+    "id": "14",
+    "time": "5678",
+    "status": 202
+  },
+  {
+    "eventType": "Success",
+    "id": "14",
+    "time": "205674",
+    "duration": 200
+  }
+]

@@ -14,7 +14,7 @@ import fs2.concurrent.Signal
  * Currently used for instance selection
  * Interacts with autocomplete store which holds states for things like dropdown and filter
 */
-class AutocompleteComponent(instances: List[String]) {
+class AutocompleteComponent(instances: List[String], selectedInstance: SignallingRef[IO, String]) {
   def render: Resource[IO, HtmlElement[IO]] = 
 
     for {
@@ -33,7 +33,7 @@ class AutocompleteComponent(instances: List[String]) {
                                 filteredList.map(i => 
                                   li(
                                     cls := "list-item",
-                                    onClick(store.select(i)),
+                                    onClick(store.select(i) >> selectedInstance.set(i)),
                                     i
                                   ))
                               }

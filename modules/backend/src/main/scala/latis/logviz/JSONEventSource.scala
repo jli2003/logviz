@@ -26,7 +26,15 @@ val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm
 class JSONEventSource extends EventSource with InstanceSource {
   override def getEvents(start: LocalDateTime, end: LocalDateTime, instance: Option[String]): Stream[IO, Event] =
 
-    val byteStream: Stream[IO, Byte] = readClassLoaderResource[IO]("events.json")
+    //seems like as soon as I don't have any future events, I start having a chunked encoding error
+    val instanceName = instance match
+      case Some("json") => "events.json"
+      case Some("json1") => "events1.json" 
+      case _ => "events.json"
+
+    println(instanceName)
+    
+    val byteStream: Stream[IO, Byte] = readClassLoaderResource[IO](instanceName)
     
     val decodedJson: Stream[IO, List[Event]] = byteStream
       .through(ast.parse)
