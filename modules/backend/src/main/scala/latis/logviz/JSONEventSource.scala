@@ -26,13 +26,12 @@ val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm
 class JSONEventSource extends EventSource with InstanceSource {
   override def getEvents(start: LocalDateTime, end: LocalDateTime, instance: Option[String]): Stream[IO, Event] =
 
-    //seems like as soon as I don't have any future events, I start having a chunked encoding error
+    //TODO:
+    //BUG: seems like as soon as I don't have any future events, I start having a chunked encoding error
     val instanceName = instance match
       case Some("json") => "events.json"
       case Some("json1") => "events1.json" 
       case _ => "events.json"
-
-    println(instanceName)
     
     val byteStream: Stream[IO, Byte] = readClassLoaderResource[IO](instanceName)
     
@@ -67,7 +66,6 @@ class JSONEventSource extends EventSource with InstanceSource {
 
           //not sure whether to calculate future events based on end time or curr time
           //in real practice, if this was "real" data, then future events should probably based on current time to actually be future events
-          //
           val curr = LocalDateTime.now(ZoneOffset.UTC)
           Stream.eval(Queue.unbounded[IO, Option[Event]]).flatMap{ queue => 
               Stream.eval(past.traverse{e => 
@@ -101,7 +99,7 @@ class JSONEventSource extends EventSource with InstanceSource {
       }
 
   override def instances: IO[List[String]] = {
-    IO.pure(List("json"))
+    IO.pure(List("json", "json1"))
   }
 }
 

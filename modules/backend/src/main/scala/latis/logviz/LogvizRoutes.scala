@@ -68,7 +68,6 @@ class LogvizRoutes(eventsource: EventSource, instancesource: InstanceSource) ext
         Ok(sse)
       }.merge
     
-    //TODO: unused as of right now
     //default (past 24 hours)
     case req @ GET -> Root / "events" =>
       // hard coding times for now

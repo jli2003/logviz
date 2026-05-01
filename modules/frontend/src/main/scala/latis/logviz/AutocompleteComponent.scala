@@ -21,22 +21,28 @@ class AutocompleteComponent(instances: List[String], selectedInstance: Signallin
       store        <- Resource.eval(AutocompleteStore())
       autocomplete <- div(
                         cls := "autocomplete",
-                        instanceInput(store),
+                        div(
+                          cls:= "autocomplete-input-wrapper",
+                          instanceInput(store),
+                        ),
                         children <-- store.isOpen.map {
                           case true =>
-                            List(ul(
-                              //TODO
-                              //think we can add a selected if it matches selected so then we can highlight or something in css
-                              cls := "instance-list",
-                              
-                              children <-- store.filteredInstances(instances).map { filteredList =>
-                                filteredList.map(i => 
-                                  li(
-                                    cls := "list-item",
-                                    onClick(store.select(i) >> selectedInstance.set(i)),
-                                    i
-                                  ))
-                              }
+                            List(div( 
+                              cls:= "autocomplete-panel", 
+                              ul(
+                                //TODO
+                                //think we can add a selected if it matches selected so then we can highlight or something in css
+                                cls := "instance-list",
+                                
+                                children <-- store.filteredInstances(instances).map { filteredList =>
+                                  filteredList.map(i => 
+                                    li(
+                                      cls := "dropdown-item",
+                                      onClick(store.select(i) >> selectedInstance.set(i)),
+                                      i
+                                    ))
+                                }
+                              )
                             ))
                           case false => Nil 
                         }

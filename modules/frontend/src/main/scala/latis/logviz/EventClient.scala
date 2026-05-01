@@ -24,14 +24,19 @@ trait EventClient {
   def getEvents: Stream[IO, Event] =
     val curr = LocalDateTime.now(java.time.ZoneId.of("UTC"))
     val start = curr.toLocalDate().atStartOfDay().toString()
-    getEvents(start, None, Some("json1"))
+    getEvents(start, None, None)
 
   //no end time (live)
-  def getEvents(start: String): Stream[IO, Event] = 
-    getEvents(start, None, Some("json1"))
+  // def getEvents(start: String): Stream[IO, Event] = 
+  //   getEvents(start, None, Some("json1"))
 
-  def getEvents(start: String, end: String): Stream[IO, Event] = 
-    getEvents(start, Some(end), Some("json1"))
+  // def getEvents(start: String, end: String): Stream[IO, Event] = 
+  //   getEvents(start, Some(end), Some("json1"))
+
+  def getEvents(start: String, end: String, instance: String): Stream[IO, Event] = 
+    getEvents(start, Some(end), Some(instance))
+
+
 
   def getInstances: IO[List[String]]
 }
@@ -57,20 +62,17 @@ object EventClient {
       val baseUri = Uri.unsafeFromString(s"$protocol//$host")
 
       new EventClient {
-        //TODO:
-        //should there be a default instance?
         override def getEvents(startTime: String, endTime: Option[String], instance: Option[String]): Stream[IO, Event] =         
-          
-          val uri = endTime match {
-            case None => 
-              //TODO:
-              //UPDATE TO USE JSON
-              val endTime = LocalDateTime.now(java.time.ZoneId.of("UTC"))
-              val end = endTime.toString()
-              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$end&instance=json1")
-            
+          val end = endTime match {
+            case Some(value) => value
+            case None => LocalDateTime.now(java.time.ZoneId.of("UTC")).toString()
+          }
+
+          val uri = instance match {
             case Some(value) => 
-              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$value&instance=json1")
+              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$end&instance=$value")
+            case None =>
+              Uri.unsafeFromString(s"$baseUri/events?startTime=$startTime&endTime=$end")
           }
 
           val request = Request[IO](method = Method.GET, uri = uri)
